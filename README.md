@@ -29,7 +29,7 @@ The subject pages list every heading, including those that still need an article
 2. Find its generated slug in `dist/catalog.json` or use the lowercase words joined with hyphens.
 3. Add `content/<subject>/<slug>.md` with that exact title as the first heading.
 4. Follow `CONTENT_GUIDE.md`.
-5. Run `python build.py`, `python scripts/check.py`, `python scripts/check_examples.py`, `python scripts/check_querying_examples.py`, `python scripts/check_aggregation_examples.py`, `python scripts/check_functions_examples.py`, `python scripts/check_modification_examples.py`, `python scripts/check_set_examples.py`, `python scripts/check_join_examples.py`, `python scripts/check_transaction_examples.py`, `python scripts/check_subquery_examples.py`, and `python scripts/check_cte_examples.py`.
+5. Run `python build.py`, `python scripts/check.py`, `python scripts/check_examples.py`, `python scripts/check_querying_examples.py`, `python scripts/check_aggregation_examples.py`, `python scripts/check_functions_examples.py`, `python scripts/check_modification_examples.py`, `python scripts/check_set_examples.py`, `python scripts/check_join_examples.py`, `python scripts/check_transaction_examples.py`, `python scripts/check_subquery_examples.py`, `python scripts/check_cte_examples.py`, and `python scripts/check_date_examples.py`.
 
 The site uses PostgreSQL for SQL examples unless an article says otherwise. Python and Java are the application languages used in examples. No C++ examples are planned.
 
