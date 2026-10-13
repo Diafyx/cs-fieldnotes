@@ -2,7 +2,7 @@
 
 A situation question gives you a small story and asks what the data should show. The hard part is often deciding what one answer row means. Once that is clear, the SQL becomes easier to write and check.
 
-The source list names the next exercises only `Situation-1` through `Situation-5`. It does not give their question text. The cases on this site are original practice questions for those slots, not copies of an unseen question.
+The topic inventory names the next exercises only `Situation-1` through `Situation-15`. It does not give their question text. The cases on this site are original practice questions for those slots, not copies of an unseen question.
 
 ## A useful way to answer
 

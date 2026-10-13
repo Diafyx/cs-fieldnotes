@@ -1,4 +1,4 @@
-"""Check the easy and medium situation examples with in-memory SQLite.
+"""Check portable situation examples with in-memory SQLite.
 
 These examples use SQL understood by both SQLite and PostgreSQL. This check
 does not replace running the pages on PostgreSQL.
@@ -29,6 +29,17 @@ EXPECTED = {
         [],
         [(4, "2026-01-01 09:00:00"), (3, "2026-01-01 09:00:00")],
     ],
+    "situation-11": [
+        [(101, 10, 20), (102, 12, 36), (103, None, None)],
+        [],
+    ],
+    "situation-13": [[("e-1",)], [], [("e-2",)], [("2026-01-05", 100)]],
+    "situation-15": [[
+        (1, 1, 0, 50, 3),
+        (1, 2, 81, 81, 1),
+        (2, 1, 0, 0, 1),
+        (2, 2, 31, 31, 1),
+    ]],
 }
 
 
