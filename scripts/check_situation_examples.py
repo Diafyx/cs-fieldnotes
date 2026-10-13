@@ -1,4 +1,4 @@
-"""Check the easy situation examples with in-memory SQLite.
+"""Check the easy and medium situation examples with in-memory SQLite.
 
 These examples use SQL understood by both SQLite and PostgreSQL. This check
 does not replace running the pages on PostgreSQL.
@@ -20,6 +20,15 @@ EXPECTED = {
         (1, 12, "2026-01-12 10:00:00"),
         (2, 20, "2026-01-11 08:00:00"),
     ]],
+    "situation-6": [[(1, 100), (2, 80), (3, 0)]],
+    "situation-7": [[(3, 2, 66.67)]],
+    "situation-8": [[(1, 3, 3), (1, 5, 6), (2, 11, 11)]],
+    "situation-9": [[(1, 2)], [], [(2,)]],
+    "situation-10": [
+        [(2, "2026-01-02 10:00:00"), (1, "2026-01-02 10:00:00")],
+        [],
+        [(4, "2026-01-01 09:00:00"), (3, "2026-01-01 09:00:00")],
+    ],
 }
 
 
@@ -34,7 +43,7 @@ def main():
             for query, expected in zip(queries, results):
                 actual = db.execute(query).fetchall()
                 assert actual == expected, f"Wrong result in {slug}: {actual}"
-    print(f"Checked the examples in {len(EXPECTED)} easy situation pages.")
+    print(f"Checked the examples in {len(EXPECTED)} situation pages.")
 
 
 if __name__ == "__main__":
