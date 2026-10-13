@@ -32,6 +32,19 @@ ORDER BY e.employee_id;
 
 Employees 1 and 2 get size 2. Employees 3, 4, and 5 get size 3. The grouped query has one row per team, so joining it back does not multiply employee rows. This makes the level of each step clear: count at the team level, then report at the employee level.
 
+## A window function solution
+
+The same result can be calculated without a grouped join:
+
+```sql
+SELECT employee_id, team_id,
+       COUNT(*) OVER (PARTITION BY team_id) AS team_size
+FROM employees
+ORDER BY employee_id;
+```
+
+The window count sees all employees in each team but keeps one output row per employee. A final `WHERE` filter would remove employees before the count is calculated. If you need the size of the whole team while showing only one selected employee, calculate the window count in a CTE first, then filter the CTE.
+
 An empty team with no employees is not in this report, because the report starts from employees. If team IDs could be `NULL`, a group for missing IDs would not match back with ordinary `=`, so this sample requires a team ID for every employee. If a person can belong to several teams, use a membership table and decide whether team size counts distinct people.
 
 ## Check your understanding
