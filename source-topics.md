@@ -66,7 +66,7 @@
 - Redundancy and Update Anomalies
 - Functional Dependencies and Keys
 - Armstrong’s Axioms, Attribute Closure, and Minimal Cover
-- First, Second, Third, and Boyce–Codd Normal Forms
+- First, Second, Third, and Boyce-Codd Normal Forms
 - Decomposition Quality and Normalization Algorithms
 - Multivalued Dependencies, 4NF, Join Dependencies, and 5NF
 
@@ -729,7 +729,7 @@
 
 - Redundancy and Update Anomalies
 - Functional Dependencies and Keys
-- First, Second, Third, and Boyce–Codd Normal Forms
+- First, Second, Third, and Boyce-Codd Normal Forms
 - Decomposition Quality and Normalization Algorithms
 
 ### Querying Essentials
