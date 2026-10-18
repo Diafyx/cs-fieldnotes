@@ -195,7 +195,10 @@ def layout(title, description, body, active=None, page_type=""):
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="{escape(description, quote=True)}">
+  <meta name="theme-color" content="#176f5b">
   <title>{escape(title)} | Fieldnotes</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/icon-192.png" sizes="192x192" type="image/png">
   <link rel="stylesheet" href="/assets/style.css">
   <script src="/assets/app.js" defer></script>
 </head>
@@ -236,6 +239,9 @@ def build():
     (DIST / "assets").mkdir(parents=True)
     shutil.copyfile(ROOT / "site" / "style.css", DIST / "assets" / "style.css")
     shutil.copyfile(ROOT / "site" / "app.js", DIST / "assets" / "app.js")
+    for size in (192, 512):
+        shutil.copyfile(ROOT / "site" / f"icon-{size}.png", DIST / "assets" / f"icon-{size}.png")
+    shutil.copyfile(ROOT / "site" / "manifest.webmanifest", DIST / "manifest.webmanifest")
 
     by_subject = defaultdict(list)
     for topic in topics:
@@ -292,7 +298,7 @@ def build():
         write(DIST / "topics" / topic["subject"] / f'{topic["slug"]}.html', layout(topic["title"], f'Study note on {topic["title"]}', body, active=topic["subject"], page_type="article-page"))
 
     subject_cards = ''.join(f'<a class="subject-card" href="/subjects/{key}.html"><span class="subject-number">0{i + 1}</span><h2>{escape(SUBJECTS[key][0])}</h2><p>{escape(SUBJECTS[key][1])}</p><span class="card-footer">{len(by_subject[key])} topics</span></a>' for i, key in enumerate(SUBJECT_ORDER))
-    home = f'<div class="hero"><div class="eyebrow">A PERSONAL STUDY LIBRARY</div><h1>Learn one idea<br><em>well.</em></h1><p>Clear notes for SQL, databases, systems, networks, and software design. Every topic from the source courses has a place here. Articles are added after careful review.</p><div class="hero-actions"><a class="primary-button" href="/subjects/sql.html">Start with SQL</a><a class="text-button" href="/coverage.html">See coverage</a></div></div><section class="home-section"><div class="section-heading"><div><div class="eyebrow">THE LIBRARY</div><h2>Choose a subject</h2></div><p>Follow a course path or search for one topic.</p></div><div class="subject-grid">{subject_cards}</div></section>'
+    home = f'<div class="hero"><div class="eyebrow">A PERSONAL STUDY LIBRARY</div><h1>Learn one idea<br><em>well.</em></h1><p>Clear notes for SQL, databases, systems, networks, and software design. Every topic from the source courses has a place here. Articles are added after careful review.</p><div class="hero-actions"><a class="primary-button" href="/subjects/sql.html">Start with SQL</a><a class="text-button" href="/coverage.html">See coverage</a></div></div><section class="home-section"><div class="section-heading"><div><div class="eyebrow">THE LIBRARY</div><h2>Choose a subject</h2></div><p>Follow a course path or search for one topic.</p></div><div class="subject-grid">{subject_cards}</div></section><section class="phone-section"><div><div class="eyebrow">ON YOUR PHONE</div><h2>Read anywhere</h2><p>Open this site in Chrome on Android. In the browser menu, tap Install app or Add to Home screen. Keep this page open until your notes are ready for offline reading.</p><p class="offline-status" data-offline-status role="status">Checking offline notes...</p></div><button type="button" class="primary-button install-button" data-install-app hidden>Install app</button></section>'
     write(DIST / "index.html", layout("Home", "A personal library for software engineering study", home, page_type="home-page"))
 
     total_ready = sum(t["ready"] for t in topics)
@@ -311,6 +317,17 @@ def build():
             "ready": topic["ready"],
         })
     write(DIST / "catalog.json", json.dumps(search_data, ensure_ascii=False, separators=(",", ":")))
+    offline_files = {}
+    for path in sorted(DIST.rglob("*")):
+        if path.is_file() and path.suffix in (".html", ".css", ".js", ".json", ".webmanifest"):
+            offline_files["/" + path.relative_to(DIST).as_posix()] = path.read_text(encoding="utf-8")
+    offline_files["/"] = offline_files["/index.html"]
+    pack = json.dumps(offline_files, ensure_ascii=False, separators=(",", ":"))
+    write(DIST / "offline-pack.json", pack)
+    icon_bytes = b"".join((DIST / "assets" / f"icon-{size}.png").read_bytes() for size in (192, 512))
+    version = hashlib.sha256(pack.encode("utf-8") + icon_bytes).hexdigest()[:16]
+    worker = (ROOT / "site" / "sw.js").read_text(encoding="utf-8").replace("__CACHE_VERSION__", version)
+    write(DIST / "sw.js", worker)
     print(f"Built {len(topics)} unique topics from {source_count} source headings; {total_ready} articles ready.")
 
 

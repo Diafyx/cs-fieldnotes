@@ -33,3 +33,15 @@ Exact titles shared by courses automatically point to one article. Titles that l
 ## Current writing order
 
 Start with SQL, then DBMS, operating systems, computer networks, object-oriented programming, and low-level design. Work through foundations before advanced topics and practice problems. Practice problems need a clear question, test data, a reasoned solution, and checks for edge cases.
+
+## Workflow for each content module
+
+1. Work on one module at a time. Read its headings in `source-topics.md`, the related finished pages, and the relevant primary documentation before writing.
+2. Account for every included heading. DSA and C++ are outside this site's content scope. Keep distinct concepts separate. Use one shared page only when it fully answers each heading that points to it.
+3. Plan the module's coverage before writing. Include the basic idea, how it works, a checked example, important rules and limits, common mistakes, and useful practice. Give a broad topic enough space to answer the questions its title raises. Do not add length just to make a page look complete.
+4. Keep the article pattern: exact source title as the first heading, a direct opening explanation, small worked examples with their expected results, clear sections for the important cases, `Try it yourself`, and `References`. Add sections when the concept needs them.
+5. Use plain, human English throughout the articles, examples, headings, and site text. Prefer short sentences and familiar words. Avoid stock introductions, filler, em dashes, en dashes, decorative symbols, and claims that are stronger than the evidence.
+6. Check calculations, timelines, and code outputs before publishing them. Add a focused checker for new kinds of worked examples when it helps catch real errors. Say what was checked. Do not say SQL or code ran when it did not.
+7. Run `python build.py` and the relevant scripts in `scripts` after a module. Review the build summary and resolve missing links, duplicate headings, and checker failures before calling the module done.
+
+All project work stays inside this workspace. The owner runs Git commands and pushes changes. Do not run Git commands while working on this project.

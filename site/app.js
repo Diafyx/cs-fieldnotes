@@ -85,3 +85,52 @@ document.addEventListener('keydown', event => {
     openSearch();
   }
 });
+
+const offlineStatus = document.querySelector('[data-offline-status]');
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+      const updateStatus = () => {
+        if (!offlineStatus) return;
+        if (registration.active || navigator.serviceWorker.controller) {
+          offlineStatus.textContent = 'Notes ready for offline reading.';
+        } else if (registration.installing || registration.waiting) {
+          offlineStatus.textContent = 'Saving notes for offline reading. Keep this page open.';
+        } else {
+          offlineStatus.textContent = 'Open this page online to save the notes.';
+        }
+      };
+      updateStatus();
+      registration.installing?.addEventListener('statechange', updateStatus);
+      registration.addEventListener('updatefound', () => {
+        updateStatus();
+        registration.installing?.addEventListener('statechange', updateStatus);
+      });
+      navigator.serviceWorker.addEventListener('controllerchange', updateStatus);
+    } catch {
+      if (offlineStatus) offlineStatus.textContent = 'Offline notes are unavailable in this browser.';
+    }
+  });
+} else if (offlineStatus) {
+  offlineStatus.textContent = 'Offline notes are unavailable in this browser.';
+}
+
+const installButton = document.querySelector('[data-install-app]');
+let installPrompt;
+window.addEventListener('beforeinstallprompt', event => {
+  if (!installButton) return;
+  event.preventDefault();
+  installPrompt = event;
+  installButton.hidden = false;
+});
+installButton?.addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  installButton.hidden = true;
+});
+window.addEventListener('appinstalled', () => {
+  if (installButton) installButton.hidden = true;
+});

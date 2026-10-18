@@ -13,6 +13,14 @@ python -m http.server 8000 --directory dist
 
 Open `http://localhost:8000` in a browser. Stop the server with `Ctrl+C`. Run `python build.py` again after editing a note.
 
+## Use it on Android
+
+Open the deployed site in Chrome on your Android phone. Open the browser menu and tap **Install app** or **Add to Home screen**. You may also see an **Install app** button on the site's home page.
+
+Keep the site open until it says **Notes ready for offline reading**. The first download saves the finished articles, subject pages, search catalog, and site layout. Planned topics stay visible, but they have no article yet. Open the site online after new notes are published to update the offline copy. An installed web app needs no Android Studio, APK, or Play Store account.
+
+The offline copy is made by `build.py` from the same files as the website. `site/manifest.webmanifest` sets the app name and icons. `site/sw.js` saves the generated pages. `scripts/make_icons.py` recreates the PNG icons with Python if they need to change. Run `python scripts/check_pwa.py` after a build to check the offline copy.
+
 ## How the content is organized
 
 - `source-topics.md` is the course inventory for this site. It contains the included subjects and leaves out DSA and C++.

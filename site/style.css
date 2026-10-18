@@ -29,6 +29,7 @@ html[data-theme="dark"] {
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'DM Sans', Arial, sans-serif; font-size: 16px; line-height: 1.65; }
 button, input { font: inherit; }
@@ -83,6 +84,11 @@ html[data-theme="dark"] .primary-button { color: #102018; }
 .subject-card h2 { font: 600 28px/1.15 'Fraunces', Georgia, serif; margin: 28px 0 8px; letter-spacing: -0.03em; }
 .subject-card p { color: var(--muted); font-size: 14px; margin: 0; }
 .card-footer { margin-top: auto; padding-top: 18px; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; }
+.phone-section { max-width: 972px; margin: 0 auto 72px; padding: 30px 34px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.phone-section h2 { font: 600 28px/1.2 'Fraunces', Georgia, serif; margin: 10px 0 8px; }
+.phone-section p { max-width: 650px; color: var(--muted); font-size: 14px; margin: 0; }
+.phone-section .offline-status { margin-top: 12px; color: var(--accent); font-weight: 700; }
+.install-button { border: 0; white-space: nowrap; }
 
 .page-intro { padding: 58px 64px 44px; }
 .page-intro h1 { font-size: clamp(45px, 5vw, 72px); margin: 12px 0 14px; }
@@ -184,6 +190,7 @@ html[data-theme="dark"] .primary-button { color: #102018; }
   .home-section { padding-top: 46px; }
   .subject-grid { grid-template-columns: 1fr; }
   .subject-card { min-height: 190px; }
+  .phone-section { margin: 0 24px 50px; padding: 24px; align-items: flex-start; flex-direction: column; }
   .section-heading { align-items: start; }
   .section-heading > p { display: none; }
   .module summary { font-size: 13px; }
