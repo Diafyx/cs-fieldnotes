@@ -4,6 +4,10 @@ from pathlib import Path
 import hashlib
 import json
 import struct
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from build import BINARY_ASSETS, CSP, render_inline
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,11 +41,24 @@ def main():
     for item in catalog:
         if item["ready"]:
             assert item["url"] in pack, item["url"]
-    icons = b"".join((DIST / "assets" / f"icon-{size}.png").read_bytes() for size in (192, 512))
-    version = hashlib.sha256(pack_bytes + icons).hexdigest()[:16]
+    binary_data = {url: (DIST / url.lstrip("/")).read_bytes() for url in BINARY_ASSETS}
+    for url in ("/assets/fonts/DMSans.ttf", "/assets/fonts/Fraunces.ttf"):
+        assert binary_data[url][:4] in (b"\x00\x01\x00\x00", b"OTTO"), url
+    version = hashlib.sha256(pack_bytes + b"".join(binary_data.values())).hexdigest()[:16]
     worker = (DIST / "sw.js").read_text(encoding="utf-8")
     assert f"fieldnotes-{version}" in worker
-    assert "__CACHE_VERSION__" not in worker
+    assert hashlib.sha256(pack_bytes).hexdigest() in worker
+    for data in binary_data.values():
+        assert hashlib.sha256(data).hexdigest() in worker
+    assert "__CACHE_VERSION__" not in worker and "__PACK_SHA256__" not in worker
+    headers = (DIST / "_headers").read_text(encoding="utf-8")
+    assert f"Content-Security-Policy: {CSP}" in headers
+    assert json.dumps(CSP) in worker
+    assert "X-Content-Type-Options: nosniff" in headers
+    assert "Referrer-Policy: no-referrer" in headers
+    assert "fonts.googleapis.com" not in pack["/assets/style.css"]
+    assert render_inline("[bad](//other.example)") == "[bad](//other.example)"
+    assert render_inline("<script>alert(1)</script>") == "&lt;script&gt;alert(1)&lt;/script&gt;"
     assert 'rel="manifest" href="/manifest.webmanifest"' in pack["/"]
     assert 'data-offline-status' in pack["/"]
     print(f"Checked Android icons, app manifest, and {len(pack)} offline files, including {sum(item['ready'] for item in catalog)} articles.")

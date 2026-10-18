@@ -21,6 +21,8 @@ Keep the site open until it says **Notes ready for offline reading**. The first 
 
 The offline copy is made by `build.py` from the same files as the website. `site/manifest.webmanifest` sets the app name and icons. `site/sw.js` saves the generated pages. `scripts/make_icons.py` recreates the PNG icons with Python if they need to change. Run `python scripts/check_pwa.py` after a build to check the offline copy.
 
+The site uses no accounts, analytics, or external scripts. Its fonts are stored in `site/fonts` and are covered by the license files there. Cloudflare Pages reads the generated `dist/_headers` file to apply the site's security headers. The offline copy checks its download before it replaces an older saved version.
+
 ## How the content is organized
 
 - `source-topics.md` is the course inventory for this site. It contains the included subjects and leaves out DSA and C++.

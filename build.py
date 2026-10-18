@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
 TOPICS = ROOT / "source-topics.md"
 CONTENT = ROOT / "content"
+CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+BINARY_ASSETS = ("/assets/icon-192.png", "/assets/icon-512.png", "/assets/fonts/DMSans.ttf", "/assets/fonts/Fraunces.ttf")
 
 SUBJECTS = {
     "sql": ("SQL and Data Engineering", "Queries, data models, and production database work."),
@@ -108,7 +110,7 @@ def render_inline(raw):
             parts.append(f"<strong>{escape(piece[2:-2])}</strong>")
         elif piece.startswith("[") and "](" in piece and piece.endswith(")"):
             label, href = piece[1:-1].split("](", 1)
-            if href.startswith(("https://", "http://", "/", "#")):
+            if href.startswith(("https://", "http://", "#")) or (href.startswith("/") and not href.startswith("//")):
                 parts.append(f'<a href="{escape(href, quote=True)}">{escape(label)}</a>')
             else:
                 parts.append(escape(piece))
@@ -211,7 +213,7 @@ def layout(title, description, body, active=None, page_type=""):
   </header>
   <div class="site-shell"><aside class="side-nav" aria-label="Subjects"><span class="side-label">LIBRARY</span>{nav}<a class="nav-link side-coverage" href="/coverage.html">Coverage</a><div class="side-foot">Made for slow, careful study.<br>Python / Java / SQL</div></aside><main id="main">{body}</main></div>
   <dialog class="search-dialog" id="search-dialog" aria-label="Search topics"><div class="search-top"><input id="search-input" type="search" placeholder="Search topics and courses" autocomplete="off" aria-label="Search topics"><button type="button" data-close-search aria-label="Close search">Esc</button></div><div id="search-results" class="search-results"></div></dialog>
-  <footer class="site-footer"><span>Fieldnotes</span><span>Built from a complete topic inventory. Articles are reviewed as they are written.</span></footer>
+  <footer class="site-footer"><span>Fieldnotes</span><span>Built from a complete topic inventory. Articles are reviewed as they are written. <a href="/privacy.html">Privacy and safety</a></span></footer>
 </body>
 </html>"""
 
@@ -241,6 +243,7 @@ def build():
     shutil.copyfile(ROOT / "site" / "app.js", DIST / "assets" / "app.js")
     for size in (192, 512):
         shutil.copyfile(ROOT / "site" / f"icon-{size}.png", DIST / "assets" / f"icon-{size}.png")
+    shutil.copytree(ROOT / "site" / "fonts", DIST / "assets" / "fonts")
     shutil.copyfile(ROOT / "site" / "manifest.webmanifest", DIST / "manifest.webmanifest")
 
     by_subject = defaultdict(list)
@@ -306,6 +309,8 @@ def build():
     rows = ''.join(f'<tr><th><a href="/subjects/{key}.html">{escape(SUBJECTS[key][0])}</a></th><td>{len(by_subject[key])}</td><td>{sum(t["ready"] for t in by_subject[key])}</td></tr>' for key in SUBJECT_ORDER)
     coverage = f'<div class="page-intro"><div class="eyebrow">EDITORIAL TRACKER</div><h1>Coverage</h1><p>The source inventory is complete. Each heading remains visible while its article is researched and written. Repeated headings point to one shared article.</p><div class="stat-line"><strong>{source_count}</strong> source headings <span>/</span> <strong>{len(topics)}</strong> unique pages <span>/</span> <strong>{total_ready}</strong> articles ready</div></div><div class="coverage-table"><table><thead><tr><th>Subject</th><th>Topics</th><th>Articles ready</th></tr></thead><tbody>{rows}</tbody></table></div>'
     write(DIST / "coverage.html", layout("Coverage", "Editorial coverage of every included topic", coverage, page_type="coverage-page"))
+    privacy = '<div class="page-intro"><div class="eyebrow">ABOUT THIS APP</div><h1>Privacy and safety</h1><p>Fieldnotes is a reading site. You can install it from your browser and save the finished notes for offline use.</p></div><div class="privacy-copy"><h2>What stays on your device</h2><p>Search runs in your browser. The words you type into search are not sent to this site. Your color theme is saved in your browser. The offline copy stores pages, fonts, and icons on your device. You can remove the saved data in your browser\'s site settings.</p><h2>What the host receives</h2><p>The web host receives normal requests when you open pages online. Fieldnotes has no account, ads, or analytics code. It does not ask for camera, location, or microphone access.</p><h2>Links and updates</h2><p>References in the notes may open other websites. Those sites have their own rules. The offline copy updates when you return online and open Fieldnotes again.</p><h2>Check the source</h2><p>The <a href="https://github.com/Diafyx/cs-fieldnotes">source code is public</a>. You can see how the pages and offline copy are made.</p></div>'
+    write(DIST / "privacy.html", layout("Privacy and safety", "How Fieldnotes stores notes and handles your data", privacy, page_type="privacy-page"))
     search_data = []
     for topic in topics:
         placement = next(p for p in topic["placements"] if p["subject"] == topic["subject"])
@@ -324,10 +329,16 @@ def build():
     offline_files["/"] = offline_files["/index.html"]
     pack = json.dumps(offline_files, ensure_ascii=False, separators=(",", ":"))
     write(DIST / "offline-pack.json", pack)
-    icon_bytes = b"".join((DIST / "assets" / f"icon-{size}.png").read_bytes() for size in (192, 512))
-    version = hashlib.sha256(pack.encode("utf-8") + icon_bytes).hexdigest()[:16]
-    worker = (ROOT / "site" / "sw.js").read_text(encoding="utf-8").replace("__CACHE_VERSION__", version)
+    pack_bytes = pack.encode("utf-8")
+    binary_data = {url: (DIST / url.lstrip("/")).read_bytes() for url in BINARY_ASSETS}
+    asset_hashes = {url: hashlib.sha256(data).hexdigest() for url, data in binary_data.items()}
+    version = hashlib.sha256(pack_bytes + b"".join(binary_data.values())).hexdigest()[:16]
+    worker = (ROOT / "site" / "sw.js").read_text(encoding="utf-8")
+    worker = worker.replace("__CACHE_VERSION__", version).replace("__PACK_SHA256__", hashlib.sha256(pack_bytes).hexdigest())
+    worker = worker.replace("__ASSET_HASHES__", json.dumps(asset_hashes, separators=(",", ":"))).replace("__CSP__", json.dumps(CSP))
     write(DIST / "sw.js", worker)
+    headers = f"/*\n  Content-Security-Policy: {CSP}\n  X-Content-Type-Options: nosniff\n  X-Frame-Options: DENY\n  Referrer-Policy: no-referrer\n  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()\n\n/sw.js\n  Cache-Control: no-cache\n\n/offline-pack.json\n  Cache-Control: no-cache\n"
+    write(DIST / "_headers", headers)
     print(f"Built {len(topics)} unique topics from {source_count} source headings; {total_ready} articles ready.")
 
 
