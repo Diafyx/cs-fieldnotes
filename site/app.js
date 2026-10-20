@@ -1,6 +1,7 @@
 const dialog = document.getElementById('search-dialog');
 const input = document.getElementById('search-input');
 const results = document.getElementById('search-results');
+const bundledAndroidApp = location.hostname === 'appassets.androidplatform.net';
 let catalog;
 
 function readTheme() {
@@ -14,6 +15,7 @@ function saveTheme(value) {
 function setTheme(value) {
   document.documentElement.dataset.theme = value;
   saveTheme(value);
+  if (bundledAndroidApp) fetch(`/__app_theme__/${value}`).catch(() => {});
 }
 
 setTheme(readTheme() || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
@@ -87,7 +89,7 @@ document.addEventListener('keydown', event => {
 });
 
 const offlineStatus = document.querySelector('[data-offline-status]');
-if ('serviceWorker' in navigator) {
+if (!bundledAndroidApp && 'serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
@@ -112,7 +114,7 @@ if ('serviceWorker' in navigator) {
       if (offlineStatus) offlineStatus.textContent = 'Offline notes are unavailable in this browser.';
     }
   });
-} else if (offlineStatus) {
+} else if (offlineStatus && !bundledAndroidApp) {
   offlineStatus.textContent = 'Offline notes are unavailable in this browser.';
 }
 

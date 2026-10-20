@@ -7,3 +7,8 @@ __pycache__/
 *.sqlite3
 dist/
 .mobile-test/
+.android-tools/
+android/.gradle/
+android/**/build/
+android/local.properties
+android/app/src/main/assets/

@@ -1,0 +1,72 @@
+plugins {
+    id 'com.android.application'
+}
+
+def signingNames = ['FIELDNOTES_KEYSTORE', 'FIELDNOTES_KEYSTORE_PASSWORD', 'FIELDNOTES_KEY_ALIAS', 'FIELDNOTES_KEY_PASSWORD']
+def signing = signingNames.collectEntries { name -> [(name): System.getenv(name)] }
+
+android {
+    namespace 'org.diafyx.fieldnotes'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'org.diafyx.fieldnotes'
+        minSdk 24
+        targetSdk 36
+        versionCode 3
+        versionName '1.0.2'
+    }
+
+    signingConfigs {
+        release {
+            if (signingNames.every { signing[it] }) {
+                storeFile file(signing.FIELDNOTES_KEYSTORE)
+                storePassword signing.FIELDNOTES_KEYSTORE_PASSWORD
+                keyAlias signing.FIELDNOTES_KEY_ALIAS
+                keyPassword signing.FIELDNOTES_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            debuggable false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.17.1'
+}
+
+tasks.register('prepareBundledSite', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'python', 'scripts/prepare_android.py'
+}
+
+tasks.named('preBuild') {
+    dependsOn tasks.named('prepareBundledSite')
+}
+
+tasks.register('checkReleaseSigning') {
+    doLast {
+        def missing = signingNames.findAll { !signing[it] }
+        if (!missing.empty) {
+            throw new GradleException("Release signing needs: ${missing.join(', ')}")
+        }
+        if (!file(signing.FIELDNOTES_KEYSTORE).isFile()) {
+            throw new GradleException('Release signing key file was not found')
+        }
+    }
+}
+
+tasks.matching { it.name == 'preReleaseBuild' }.configureEach {
+    dependsOn tasks.named('checkReleaseSigning')
+}

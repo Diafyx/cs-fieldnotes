@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1024, initial-scale=1">
+<style>
+@font-face { font-family: Fraunces; src: url('../site/fonts/Fraunces.ttf'); }
+@font-face { font-family: DM; src: url('../site/fonts/DMSans.ttf'); }
+* { box-sizing: border-box; }
+html, body { width: 1024px; height: 500px; margin: 0; overflow: hidden; }
+body { background: #176f5b; font-family: DM, Arial, sans-serif; }
+.sheet { position: absolute; inset: 28px; border-radius: 22px; background: #f7f6f2; overflow: hidden; }
+.left { position: absolute; top: 90px; left: 62px; width: 460px; }
+.label { color: #176f5b; font-size: 17px; font-weight: 700; letter-spacing: .16em; }
+h1 { color: #17231e; font-family: Fraunces, Georgia, serif; font-size: 78px; line-height: 1; letter-spacing: -.05em; font-weight: 600; margin: 26px 0 24px; }
+p { color: #394b42; font-size: 27px; line-height: 1.35; margin: 0; max-width: 390px; }
+.rule { width: 110px; height: 5px; border-radius: 5px; background: #7ecbac; margin-top: 40px; }
+.card { position: absolute; background: #fffefa; border: 1px solid #dce2d9; border-radius: 14px; box-shadow: 0 24px 40px rgba(18, 41, 29, .12); }
+.back { width: 350px; height: 275px; top: 104px; right: 30px; transform: rotate(8deg); }
+.front { width: 350px; height: 295px; top: 82px; right: 80px; transform: rotate(-5deg); padding: 33px 30px; }
+.small { color: #176f5b; font-size: 14px; font-weight: 700; letter-spacing: .13em; }
+.front h2 { font-family: Fraunces, Georgia, serif; color: #17231e; font-size: 36px; line-height: 1.08; margin: 20px 0 25px; font-weight: 600; }
+.line { height: 10px; background: #e7ebe4; border-radius: 5px; margin: 15px 0; }
+.line.short { width: 67%; }
+.line.mid { width: 84%; }
+.chip { display: inline-block; margin-top: 13px; padding: 8px 13px; border-radius: 7px; background: #e7f3ee; color: #176f5b; font-size: 14px; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="left">
+      <div class="label">A STUDY LIBRARY</div>
+      <h1>Fieldnotes</h1>
+      <p>Clear notes for computing, ready to read offline.</p>
+      <div class="rule"></div>
+    </div>
+    <div class="card back"></div>
+    <div class="card front">
+      <div class="small">STUDY NOTE</div>
+      <h2>Learn one idea well.</h2>
+      <div class="line"></div>
+      <div class="line mid"></div>
+      <div class="line short"></div>
+      <div class="chip">Read offline</div>
+    </div>
+  </div>
+</body>
+</html>
