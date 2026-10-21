@@ -54,19 +54,81 @@ async function main() {
       await page.goto(origin + '/index.html');
       await page.getByRole('heading', { name: 'Learn one idea well.' }).waitFor();
       assert.equal(await page.locator('[data-install-app]').count(), 0);
+      const selectedSubjectIsVisible = () => page.locator('.side-nav').evaluate(nav => {
+        const selected = nav.querySelector('.nav-link.active');
+        if (!selected) return false;
+        const navBox = nav.getBoundingClientRect();
+        const selectedBox = selected.getBoundingClientRect();
+        return selectedBox.left >= navBox.left - 1 && selectedBox.right <= navBox.right + 1;
+      });
+      await page.locator('.side-nav a[href="/subjects/lld.html"]').click();
+      await page.getByRole('heading', { name: 'Low-Level Design' }).waitFor();
+      assert(await selectedSubjectIsVisible(), `Selected rightmost subject is off screen at ${width}px`);
+      await page.reload();
+      assert(await selectedSubjectIsVisible(), `Selected subject moved off screen after reload at ${width}px`);
+      for (const subject of ['oop', 'networks', 'os', 'dbms', 'sql', 'dbms', 'os', 'networks', 'oop', 'lld']) {
+        await page.locator(`.side-nav a[href="/subjects/${subject}.html"]`).click();
+        await page.waitForURL(`**/subjects/${subject}.html`);
+        assert(await selectedSubjectIsVisible(), `Selected ${subject} subject is off screen at ${width}px`);
+      }
+      await page.goto(origin + '/index.html');
       await page.getByRole('button', { name: /theme/i }).click();
       await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark');
       assert(signals.includes('/__app_theme__/dark'), 'Android theme signal was not sent');
 
       await page.getByRole('button', { name: 'Search topics' }).click();
+      const searchBox = await page.locator('#search-dialog').boundingBox();
+      assert(searchBox && searchBox.y <= 40, `Search opened too low at ${width}px: ${searchBox?.y}px`);
       await page.getByRole('searchbox', { name: 'Search topics' }).fill('CPU Affinity');
       const result = page.getByRole('link', { name: /CPU Affinity, Cache Locality, and NUMA/ }).first();
       await result.waitFor();
       await result.click();
       await page.getByRole('heading', { name: 'CPU Affinity, Cache Locality, and NUMA' }).waitFor();
 
+      await page.getByRole('button', { name: 'Search topics' }).click();
+      assert.equal(await page.locator('.search-history-item').first().textContent(), 'CPU Affinity');
+      await page.locator('.search-history-item').first().click();
+      assert.equal(await page.getByRole('searchbox', { name: 'Search topics' }).inputValue(), 'CPU Affinity');
+      await page.getByRole('button', { name: 'Close search' }).click();
+      for (let number = 1; number <= 6; number++) {
+        await page.getByRole('button', { name: 'Search topics' }).click();
+        await page.getByRole('searchbox', { name: 'Search topics' }).fill(`test search ${number}`);
+        await page.getByRole('searchbox', { name: 'Search topics' }).press('Enter');
+        await page.getByRole('button', { name: 'Close search' }).click();
+      }
+      await page.reload();
+      await page.getByRole('button', { name: 'Search topics' }).click();
+      assert.deepEqual(await page.locator('.search-history-item').allTextContents(),
+        ['test search 6', 'test search 5', 'test search 4', 'test search 3', 'test search 2']);
+      await page.getByRole('searchbox', { name: 'Search topics' }).fill('TEST SEARCH 6');
+      await page.getByRole('searchbox', { name: 'Search topics' }).press('Enter');
+      await page.getByRole('button', { name: 'Close search' }).click();
+      await page.getByRole('button', { name: 'Search topics' }).click();
+      assert.deepEqual(await page.locator('.search-history-item').allTextContents(),
+        ['TEST SEARCH 6', 'test search 5', 'test search 4', 'test search 3', 'test search 2']);
+      await page.getByRole('button', { name: 'Clear' }).click();
+      assert.equal(await page.locator('.search-history-item').count(), 0);
+      await page.getByRole('button', { name: 'Close search' }).click();
+
       await page.goto(origin + '/subjects/os.html');
       await page.locator('h1').getByText('Operating Systems', { exact: true }).waitFor();
+      const modules = page.locator('details.module');
+      assert.equal(await modules.nth(0).evaluate(element => element.open), true);
+      assert.equal(await modules.nth(1).evaluate(element => element.open), true);
+      await modules.nth(0).locator('summary').click();
+      await modules.nth(1).locator('summary').click();
+      await modules.nth(2).locator('a').first().click();
+      await page.getByRole('heading', { name: 'Scheduling Queues and Schedulers' }).waitFor();
+      assert(await selectedSubjectIsVisible(), `Selected subject is off screen in an article at ${width}px`);
+      await page.goBack();
+      await page.reload();
+      assert(await selectedSubjectIsVisible(), `Selected subject is off screen after Back at ${width}px`);
+      assert.equal(await modules.nth(0).evaluate(element => element.open), false,
+        'First closed module reopened after returning to the subject');
+      assert.equal(await modules.nth(1).evaluate(element => element.open), false,
+        'Second closed module reopened after returning to the subject');
+      assert.equal(await modules.nth(2).evaluate(element => element.open), true,
+        'The open module closed after returning to the subject');
       await page.goto(origin + '/privacy.html');
       await page.getByRole('heading', { name: 'Privacy policy' }).waitFor();
       await page.getByText('This app does not ask for internet').waitFor();

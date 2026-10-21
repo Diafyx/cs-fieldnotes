@@ -125,17 +125,32 @@ def check_store_files(version, submission):
 
 def check_apk(path, version, owner_key):
     require(path.is_file(), f"APK is missing: {path}")
+    expected_assets = {"assets/" + item.relative_to(ASSETS).as_posix(): item
+                       for item in ASSETS.rglob("*") if item.is_file()}
+    require(expected_assets, "Bundled Android pages are missing")
+    with zipfile.ZipFile(path) as apk:
+        require(apk.testzip() is None, "APK contains a damaged ZIP entry")
+        entries = set(apk.namelist())
+        missing = set(expected_assets) - entries
+        require(not missing, f"APK is missing {len(missing)} local asset files")
+        for name, source in expected_assets.items():
+            require(apk.read(name) == source.read_bytes(), f"APK has stale content: {name}")
+        require("assets/sw.js" not in entries, "Web service worker was packed into Android")
     build_tools = TOOLS / "android-sdk/build-tools/36.0.0"
     aapt = build_tools / "aapt.exe"
-    signer = build_tools / "apksigner.bat"
-    require(aapt.is_file() and signer.is_file(), "Local Android build tools are missing")
+    signer = build_tools / "lib/apksigner.jar"
+    jdk = next((item for item in (TOOLS / "jdk17").iterdir() if item.is_dir()), None)
+    require(jdk is not None, "Local JDK 17 is missing")
+    java = jdk / "bin/java.exe"
+    require(aapt.is_file() and signer.is_file() and java.is_file(), "Local Android build tools are missing")
     badging = subprocess.run([str(aapt), "dump", "badging", str(path)], capture_output=True, text=True, check=True).stdout
     package = re.search(r"(?m)^package: name='([^']+)' versionCode='([^']+)' versionName='([^']+)'", badging)
     require(package and package.groups() == (PACKAGE, version["code"], version["name"]),
             "Built APK package or version differs from android/app/build.gradle")
     permissions = subprocess.run([str(aapt), "dump", "permissions", str(path)], capture_output=True, text=True, check=True).stdout
     require(not re.search(r"(?m)^uses-permission", permissions), "Built APK requests an Android permission")
-    signed = subprocess.run([str(signer), "verify", "--print-certs", str(path)], capture_output=True, text=True, check=True).stdout
+    signed = subprocess.run([str(java), "-jar", str(signer), "verify", "--print-certs", str(path)],
+                            capture_output=True, text=True, check=True).stdout
     if owner_key:
         match = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]{64})", signed)
         require(match and match.group(1).lower() == UPLOAD_CERT, "APK uses the wrong upload key")
@@ -174,7 +189,7 @@ def check_live_privacy():
         require(response.status == 200, f"Privacy page returned HTTP {response.status}")
         text = response.read().decode("utf-8")
     require("Standalone Android app" in text and "Data retention and deletion" in text
-            and "GitHub Issues" in text,
+            and "up to five recent searches" in text and "GitHub Issues" in text,
             "Public privacy page is still the old version. Publish the latest site first.")
 
 

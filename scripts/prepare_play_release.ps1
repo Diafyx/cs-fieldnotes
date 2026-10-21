@@ -2,12 +2,16 @@ param(
     [switch]$UseCurrentVersion,
     [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+$')]
     [string]$VersionName,
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    [switch]$ArchiveExisting
 )
 
 $ErrorActionPreference = 'Stop'
 if ($UseCurrentVersion -eq [bool]$VersionName) {
-    throw 'Choose either -UseCurrentVersion or -VersionName 1.0.3.'
+    throw 'Choose either -UseCurrentVersion or -VersionName x.y.z.'
+}
+if ($ArchiveExisting -and (!$UseCurrentVersion -or $CheckOnly)) {
+    throw '-ArchiveExisting needs -UseCurrentVersion and cannot be combined with -CheckOnly.'
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -43,15 +47,19 @@ if ([string]::IsNullOrWhiteSpace($notes) -or $notes.Length -gt 500) {
 }
 
 $archive = Join-Path $projectRoot ".android-tools\play-releases\$releaseCode-$releaseName"
-if (Test-Path -LiteralPath $archive) {
+if (!$CheckOnly -and (Test-Path -LiteralPath $archive)) {
     throw "This release already has an archive: $archive"
 }
 
 $apk = Join-Path $projectRoot 'android\app\build\outputs\apk\release\app-release.apk'
 $bundle = Join-Path $projectRoot 'android\app\build\outputs\bundle\release\app-release.aab'
 $aapt = Join-Path $projectRoot '.android-tools\android-sdk\build-tools\36.0.0\aapt.exe'
-$apksigner = Join-Path $projectRoot '.android-tools\android-sdk\build-tools\36.0.0\apksigner.bat'
-if (!(Test-Path -LiteralPath $aapt -PathType Leaf) -or !(Test-Path -LiteralPath $apksigner -PathType Leaf)) {
+$apksignerJar = Join-Path $projectRoot '.android-tools\android-sdk\build-tools\36.0.0\lib\apksigner.jar'
+$jdk = Get-ChildItem -LiteralPath (Join-Path $projectRoot '.android-tools\jdk17') -Directory | Select-Object -First 1
+if ($null -eq $jdk) { throw 'The local JDK 17 is missing.' }
+$java = Join-Path $jdk.FullName 'bin\java.exe'
+if (!(Test-Path -LiteralPath $aapt -PathType Leaf) -or !(Test-Path -LiteralPath $apksignerJar -PathType Leaf) `
+        -or !(Test-Path -LiteralPath $java -PathType Leaf)) {
     throw 'The local Android build tools are missing.'
 }
 
@@ -77,17 +85,24 @@ try {
         $updated = $true
     }
 
-    & (Join-Path $projectRoot 'scripts\release_android.ps1')
+    if (!$ArchiveExisting) {
+        & (Join-Path $projectRoot 'scripts\release_android.ps1')
+    } else {
+        Write-Host 'Checking the existing signed release files before archiving.'
+    }
     if (!(Test-Path -LiteralPath $apk -PathType Leaf) -or !(Test-Path -LiteralPath $bundle -PathType Leaf)) {
         throw 'The release APK or Play bundle is missing.'
     }
 
-    $packageLine = (& $aapt dump badging $apk | Select-String '^package:' | Select-Object -First 1).Line
-    if ($LASTEXITCODE -ne 0 -or $packageLine -notmatch "name='org\.diafyx\.fieldnotes' versionCode='$releaseCode' versionName='$([regex]::Escape($releaseName))'") {
-        throw 'The built APK has the wrong package or version.'
+    $badging = & $aapt dump badging $apk
+    $aaptExitCode = $LASTEXITCODE
+    if ($aaptExitCode -ne 0) { throw "Could not read the built APK metadata (aapt exit code $aaptExitCode)." }
+    $packageLine = ($badging | Select-String '^package:' | Select-Object -First 1).Line
+    if ($packageLine -notmatch "name='org\.diafyx\.fieldnotes' versionCode='$releaseCode' versionName='$([regex]::Escape($releaseName))'") {
+        throw "The built APK has the wrong package or version. Expected org.diafyx.fieldnotes $releaseName ($releaseCode). Found: $packageLine"
     }
 
-    $signature = & $apksigner verify --print-certs $apk
+    $signature = & $java -jar $apksignerJar verify --print-certs $apk
     if ($LASTEXITCODE -ne 0) { throw 'The APK signature check failed.' }
     $fingerprint = [regex]::Match(($signature -join "`n"), 'Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]{64})').Groups[1].Value.ToLowerInvariant()
     $expectedFingerprint = '2072ef88ab6be2055dd154366e5458c0a3647a511b10ac7aca8d1ff5ff14df28'

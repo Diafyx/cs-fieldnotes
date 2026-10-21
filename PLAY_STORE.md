@@ -2,11 +2,11 @@
 
 Fieldnotes is not on Google Play yet. The Android app reads its own bundled pages. It works offline and asks for no Android permissions. The website and app use the same articles. The app gets new articles only through an app update.
 
-The Android package is `org.diafyx.fieldnotes`. The first Play upload can use version `1.0.2`, code `3`. The current project has 334 finished articles. Run the tests again after each content change so the uploaded bundle matches the latest articles. Google Play requires API 36 for new phone apps in 2026; this app targets API 36.
+The Android package is `org.diafyx.fieldnotes`. The first Play upload uses version `1.0.5`, code `6`. The current project has 334 finished articles. Run the tests again after each content change so the uploaded bundle matches the latest articles. Google Play requires API 36 for new phone apps in 2026; this app targets API 36.
 
 ## Finish these items before submitting
 
-1. Publish the latest site. `https://fieldnotes-15h.pages.dev/privacy` must show the **Standalone Android app** section. The public site still showed the old policy when this guide was written. Run `python scripts/check_play_store.py --live` after your Cloudflare deployment. Do not enter the old policy in Play Console.
+1. Publish the latest site. `https://fieldnotes-15h.pages.dev/privacy` must say that up to five recent searches stay on the device. Run `python scripts/check_play_store.py --live` after your Cloudflare deployment. Do not enter the old policy in Play Console.
 2. Choose a public support email that you can read. Play shows it on the listing. Use that same address when running the submission check. Do not use the release key password as part of any email or form.
 3. Install the current app on a phone and take at least two real screenshots. Save them in `play-store/screenshots/`. Read [screenshots/README.md](play-store/screenshots/README.md) for the suggested screens. The store icon and feature image are already in `play-store/`.
 4. Back up `.android-tools/signing/fieldnotes-release.jks` and its password privately. They are the upload key for future versions. Never put them in Git or send the password to anyone.
@@ -20,6 +20,8 @@ From the `tuf-study` directory in PowerShell:
 ```
 
 This builds the site and Android pages, runs the content checks, runs Android lint, builds a debug APK and bundle, checks the package, version, permissions, signature, and bundled files, and opens the pages in a phone-sized browser at four widths. The debug bundle is only for tests. Do not upload it to Play.
+
+For a wider check, run `.\scripts\test_play_ready.ps1 -DeepAudit`. This visits every bundled page at 320px and 390px, checks for page errors, missing images, horizontal overflow, small controls, and external requests, and tests Back and module state on all six subjects. Read `.mobile-test/audit/audit.md` afterward. It also saves sample screenshots there. The submission check runs this audit too.
 
 The browser test uses Node.js and Playwright. This computer already has them under the ignored `.mobile-test/` folder. On another computer, install Node.js 20 or newer and run `.\scripts\setup_play_tests.ps1` once. It downloads the test browser into `.mobile-test/`. The local Android build also needs Python, JDK 17, Android SDK Platform 36, Build Tools 36.0.0, and Gradle 9.6.0 in `.android-tools/` on this computer.
 
@@ -39,9 +41,11 @@ For the first upload, run:
 .\scripts\prepare_play_release.ps1 -UseCurrentVersion
 ```
 
-Enter the release key password in your own terminal. The script builds and verifies the signed APK and AAB. It checks that the bundle contains the current articles and that both files use the expected upload key. It saves the upload file at `.android-tools/play-releases/3-1.0.2/fieldnotes.aab` and the notes at `release-notes.txt` in the same folder. **Upload the AAB, not the APK.** Do not upload an older file from `android/app/build/outputs/`; the old APK was built before the latest articles.
+Enter the release key password in your own terminal. The script builds and verifies the signed APK and AAB. It checks that the bundle contains the current articles and that both files use the expected upload key. It saves the upload file at `.android-tools/play-releases/6-1.0.5/fieldnotes.aab` and the notes at `release-notes.txt` in the same folder. **Upload the AAB, not the APK.** The older `5-1.0.4` release does not include the subject menu fix. Do not upload or use it for screenshots.
 
-The local release key has SHA-256 fingerprint `2072ef88ab6be2055dd154366e5458c0a3647a511b10ac7aca8d1ff5ff14df28`. Let Google create the Play App Signing key when the Console asks. Google will use our key as the upload key. An app installed from Play has a different signature from a directly installed release APK. Uninstall a directly installed copy before installing the Play test version. This only clears the saved theme choice.
+If the signed build finished but archiving stopped later, run `.\scripts\prepare_play_release.ps1 -UseCurrentVersion -ArchiveExisting`. This checks both existing files, their bundled pages, and their signatures before saving the release folder. It does not ask for the key password again.
+
+The local release key has SHA-256 fingerprint `2072ef88ab6be2055dd154366e5458c0a3647a511b10ac7aca8d1ff5ff14df28`. Let Google create the Play App Signing key when the Console asks. Google will use our key as the upload key. An app installed from Play has a different signature from a directly installed release APK. Uninstall a directly installed copy before installing the Play test version. This clears the saved theme and recent searches.
 
 ## Create the app in Play Console
 
@@ -92,7 +96,7 @@ The app has no `INTERNET` permission, account, ads, analytics, or app data uploa
 ## Test through Google Play
 
 1. Go to **Test and release > Testing**. If this is a new **personal** developer account created after 13 November 2023, start a **Closed testing** track. Google requires at least 12 testers opted in continuously for 14 days before you can apply for production access. Add testers by email or Google Group and give them the opt-in link after the track is published. If this is an **organization** account, use **Internal testing** first, then move to production when the app is ready. The Console will show any account-specific rule.
-2. Create a release on the chosen track. Upload `.android-tools/play-releases/3-1.0.2/fieldnotes.aab`. Choose the Google-generated app signing key if asked. Paste `play-store/release-notes/3.txt` as the release notes. Review errors and warnings, then roll out the test release. Use **Publishing overview > Send for review** if the Console asks.
+2. Create a release on the chosen track. Upload `.android-tools/play-releases/6-1.0.5/fieldnotes.aab`. Choose the Google-generated app signing key if asked. Paste `play-store/release-notes/6.txt` as the release notes. Review errors and warnings, then roll out the test release. Use **Publishing overview > Send for review** if the Console asks.
 3. Wait for the test link or Play Store URL to work. Install from Play on a real phone. If a directly installed APK is already there, uninstall it first because Play uses a different signing key.
 4. Test home, every subject, search, one finished article, a planned topic, theme change, back navigation from a scrolled page, offline reading in airplane mode, reference links, and the in-app privacy page. Check both light and dark themes. Record any problems and fix them before a public release.
 5. Open **Test and release > Testing > Pre-launch report > Overview**. Google runs this after an upload, subject to test lab capacity. Review crashes, compatibility, performance, accessibility, and screenshots. Fix serious findings and upload a new version if needed.
@@ -105,13 +109,13 @@ For a new personal account, finish the closed test and apply for production acce
 
 ## Publish later updates
 
-Write the new notes in `play-store/release-notes/4.txt`. Run the full local suite again. Build the next signed release with:
+Write the new notes in `play-store/release-notes/7.txt`. Run the full local suite again. Build the next signed release with:
 
 ```powershell
-.\scripts\prepare_play_release.ps1 -VersionName 1.0.3
+.\scripts\prepare_play_release.ps1 -VersionName 1.0.6
 ```
 
-This raises the version code to `4`, saves a new release folder, and stops if the notes are missing or the version would go backward. Use a higher version code for every later Play upload. Review the Data safety answers and screenshots again if the app changes. Run the submission suite, test the Play release, and only then move it to production. The signed files and key stay in ignored folders. You run any Git commands yourself.
+This raises the version code to `7`, saves a new release folder, and stops if the notes are missing or the version would go backward. Use a higher version code for every later Play upload. Review the Data safety answers and screenshots again if the app changes. Run the submission suite, test the Play release, and only then move it to production. The signed files and key stay in ignored folders. You run any Git commands yourself.
 
 ## Official help
 
